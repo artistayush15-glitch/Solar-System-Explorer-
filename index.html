@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#050817">
+<title>3D Solar System Explorer</title>
+<style>
+:root{--bg:#050817;--panel:rgba(11,18,42,.82);--line:rgba(145,170,255,.2);--text:#f4f6ff;--muted:#a8b3d6;--accent:#83a7ff}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,Arial,sans-serif}
+#space{position:fixed;inset:0}canvas{display:block}
+.top{position:fixed;z-index:3;top:20px;left:24px;right:24px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+.brand{pointer-events:auto;display:flex;align-items:center;gap:12px}.logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,#526dff,#9b5cff);display:grid;place-items:center;box-shadow:0 8px 30px #586bff55;font-size:22px}
+.brand h1{font-size:15px;letter-spacing:2px;margin:0}.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:2.5px;margin-top:4px}
+.topright{pointer-events:auto;display:flex;gap:8px}.pill,.control{border:1px solid var(--line);background:rgba(13,21,49,.72);color:var(--text);padding:10px 14px;border-radius:30px;font-size:12px;backdrop-filter:blur(14px);cursor:pointer}
+.pill:hover,.control:hover{background:#263663}
+.hero{position:fixed;z-index:2;left:26px;top:34%;max-width:270px;pointer-events:none}.eyebrow{color:#9eb5ff;font-size:10px;letter-spacing:3px;text-transform:uppercase}.hero h2{font-size:clamp(34px,5vw,58px);line-height:.98;margin:14px 0;font-weight:750;letter-spacing:-2px}.hero p{color:var(--muted);line-height:1.65;font-size:13px;margin:0 0 18px}.hint{font-size:10px;color:#8190b8;letter-spacing:1px}
+.panel{position:fixed;z-index:4;right:22px;top:100px;width:min(310px,calc(100vw - 36px));padding:20px;border:1px solid var(--line);border-radius:22px;background:var(--panel);backdrop-filter:blur(18px);box-shadow:0 18px 60px #0008;transition:.25s;max-height:calc(100vh - 220px);overflow:auto}
+.panel .tag{font-size:10px;letter-spacing:2px;color:#91aaff;text-transform:uppercase}.panel h2{font-size:28px;margin:8px 0 4px}.panel p{font-size:12px;line-height:1.65;color:var(--muted)}.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.stat{padding:10px;border-radius:12px;background:#ffffff0a;border:1px solid #ffffff10}.stat b{display:block;font-size:13px}.stat span{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.planetnav{position:fixed;z-index:4;bottom:22px;left:50%;transform:translateX(-50%);display:flex;gap:8px;max-width:calc(100vw - 24px);overflow-x:auto;padding:8px;border:1px solid var(--line);border-radius:24px;background:rgba(8,14,34,.78);backdrop-filter:blur(16px);scrollbar-width:none}.planetnav::-webkit-scrollbar{display:none}
+.planetbtn{flex:0 0 auto;border:1px solid transparent;background:transparent;color:#aab6d8;padding:9px 12px;border-radius:18px;font-size:11px;cursor:pointer}.planetbtn.active,.planetbtn:hover{background:#26345e;color:white;border-color:#657fca66}
+.footer{position:fixed;z-index:2;left:26px;bottom:28px;color:#657397;font-size:10px;letter-spacing:1px}
+.modal{position:fixed;inset:0;z-index:10;background:#020511cc;display:none;place-items:center;padding:18px}.modal.show{display:grid}.modalbox{width:min(470px,100%);background:#101936;border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 20px 80px #000}.modalbox h2{margin-top:0}.q{color:#dce4ff;font-size:14px;line-height:1.5}.answers{display:grid;gap:8px;margin:16px 0}.answer{padding:12px;border-radius:12px;border:1px solid var(--line);background:#ffffff08;color:white;text-align:left;cursor:pointer}.answer:hover{background:#293965}.close{float:right}
+@media(max-width:700px){.top{top:12px;left:14px;right:14px}.brand h1{font-size:11px}.brand small{font-size:8px}.logo{width:36px;height:36px}.topright .pill{padding:8px 10px;font-size:10px}.hero{left:18px;top:19%;max-width:185px}.hero h2{font-size:35px}.hero p{font-size:11px}.panel{top:auto;bottom:91px;right:12px;width:190px;padding:13px;border-radius:16px;max-height:35vh}.panel h2{font-size:20px}.panel p{font-size:10px;margin:6px 0}.stats{gap:5px;margin-top:8px}.stat{padding:7px}.stat b{font-size:11px}.stat span{font-size:8px}.planetnav{bottom:10px;gap:2px;padding:5px}.planetbtn{padding:8px 10px;font-size:10px}.footer{display:none}}
+</style>
+</head>
+<body>
+<div id="space"></div>
+<header class="top">
+ <div class="brand"><div class="logo">✦</div><div><h1>SOLAR SYSTEM EXPLORER</h1><small>AN INTERACTIVE SPACE JOURNEY</small></div></div>
+ <div class="topright"><button class="pill" id="quizBtn">✧ Take Quiz</button><button class="pill" id="motionBtn">Ⅱ Pause</button></div>
+</header>
+<section class="hero"><div class="eyebrow">Explore the cosmos</div><h2>Beyond<br>our world.</h2><p>Travel through our Solar System. Select a planet to discover its size, orbit and fascinating facts.</p><div class="hint">DRAG TO ROTATE · SCROLL TO ZOOM</div></section>
+<aside class="panel" id="info"><div class="tag">Your destination</div><h2 id="planetName">The Sun</h2><div class="tag" id="planetType">The star at the centre</div><p id="planetDesc">The Sun is the star at the centre of our Solar System. Its gravity holds the planets in orbit and its light makes life on Earth possible.</p><div class="stats"><div class="stat"><b id="planetSize">1.39 million km</b><span>Diameter</span></div><div class="stat"><b id="planetYear">—</b><span>One orbit</span></div></div></aside>
+<nav class="planetnav" id="planetNav"></nav>
+<div class="footer">A SCHOOL SCIENCE PROJECT · THE MILKY WAY</div>
+<div class="modal" id="quizModal"><div class="modalbox"><button class="pill close" id="closeQuiz">Close ✕</button><div class="eyebrow">Knowledge check</div><h2>Space Quiz</h2><div class="q" id="question">Which planet is known as the Red Planet?</div><div class="answers" id="answers"></div><p id="feedback" aria-live="polite"></p><button class="pill" id="nextQ">Next question →</button></div></div>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const host=document.getElementById('space');
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x050817); scene.fog=new THREE.FogExp2(0x050817,.0018);
+const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1800);camera.position.set(0,95,190);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;host.appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.045;controls.minDistance=28;controls.maxDistance=360;controls.maxPolarAngle=Math.PI*.88;
+scene.add(new THREE.AmbientLight(0x8094c8,.65));
+const sunLight=new THREE.PointLight(0xffd38a,2600,700,1.5);scene.add(sunLight);
+const starGeo=new THREE.BufferGeometry(), starPos=[];for(let i=0;i<2400;i++){const r=500*Math.random(),a=Math.random()*Math.PI*2,b=Math.acos(2*Math.random()-1);starPos.push(r*Math.sin(b)*Math.cos(a),r*Math.cos(b),r*Math.sin(b)*Math.sin(a));}starGeo.setAttribute('position',new THREE.Float32BufferAttribute(starPos,3));const stars=new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xcbd8ff,size:1.05,transparent:true,opacity:.85}));scene.add(stars);
+const data=[
+{name:'Mercury',type:'Rocky planet',desc:'Mercury is the smallest planet and the closest planet to the Sun. It has a heavily cratered surface and very little atmosphere.',size:'4,879 km',year:'88 Earth days',r:2.2,d:13,color:0x9b9289},
+{name:'Venus',type:'Rocky planet',desc:'Venus has a thick atmosphere that traps heat. It is the hottest planet in our Solar System, even though Mercury is closer to the Sun.',size:'12,104 km',year:'225 Earth days',r:3.6,d:19,color:0xd9a66f},
+{name:'Earth',type:'Rocky planet · Our home',desc:'Earth is the only world currently known to support life. Liquid water covers most of its surface, and its atmosphere protects living things.',size:'12,742 km',year:'365.25 days',r:3.9,d:26,color:0x398de0},
+{name:'Mars',type:'Rocky planet · The Red Planet',desc:'Mars looks red because iron minerals in its soil have oxidised. It has giant volcanoes, deep valleys and two small moons.',size:'6,779 km',year:'687 Earth days',r:3.0,d:34,color:0xc85e43},
+{name:'Jupiter',type:'Gas giant',desc:'Jupiter is the largest planet. Its atmosphere contains colourful cloud bands and a huge storm called the Great Red Spot.',size:'139,820 km',year:'11.86 Earth years',r:10.5,d:51,color:0xd2a77e},
+{name:'Saturn',type:'Gas giant',desc:'Saturn is famous for its spectacular rings, made mostly of countless pieces of ice and rock. It is less dense than water.',size:'116,460 km',year:'29.4 Earth years',r:8.7,d:72,color:0xd9c28c},
+{name:'Uranus',type:'Ice giant',desc:'Uranus is an ice giant with a blue-green colour caused by methane in its atmosphere. It rotates on its side compared with most planets.',size:'50,724 km',year:'84 Earth years',r:6.2,d:94,color:0x7bcbd1},
+{name:'Neptune',type:'Ice giant',desc:'Neptune is the most distant planet from the Sun. It is a cold, dark world with extremely fast winds.',size:'49,244 km',year:'165 Earth years',r:6.0,d:116,color:0x416fe0}
+];
+const sun=new THREE.Mesh(new THREE.SphereGeometry(7,48,48),new THREE.MeshBasicMaterial({color:0xffbd48}));scene.add(sun);
+const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:(()=>{const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d'),g=x.createRadialGradient(64,64,2,64,64,64);g.addColorStop(0,'rgba(255,220,120,.9)');g.addColorStop(.3,'rgba(255,145,45,.3)');g.addColorStop(1,'rgba(255,120,20,0)');x.fillStyle=g;x.fillRect(0,0,128,128);const t=new THREE.CanvasTexture(c);return t})(),transparent:true,blending:THREE.AdditiveBlending}));glow.scale.set(34,34,1);sun.add(glow);
+const planetMeshes=[];const orbitSpeeds=[.022,.016,.012,.009,.0048,.0034,.0024,.0018];
+data.forEach((p,i)=>{
+ const orbit=new THREE.Mesh(new THREE.RingGeometry(p.d-.055,p.d+.055,160),new THREE.MeshBasicMaterial({color:0x52628d,side:THREE.DoubleSide,transparent:true,opacity:.34}));orbit.rotation.x=Math.PI/2;scene.add(orbit);
+ const mesh=new THREE.Mesh(new THREE.SphereGeometry(p.r,48,48),new THREE.MeshStandardMaterial({color:p.color,roughness:.86,metalness:.02,emissive:p.color,emissiveIntensity:.025}));
+ mesh.userData={index:i,angle:i*.7};scene.add(mesh);
+ if(p.name==='Saturn'){const ring=new THREE.Mesh(new THREE.RingGeometry(p.r*1.25,p.r*2.05,80),new THREE.MeshStandardMaterial({color:0xcab88f,side:THREE.DoubleSide,transparent:true,opacity:.8,roughness:1}));ring.rotation.x=Math.PI/2.35;mesh.add(ring);}
+ if(p.name==='Earth'){const moon=new THREE.Mesh(new THREE.SphereGeometry(.85,24,24),new THREE.MeshStandardMaterial({color:0xb9bdc9}));mesh.add(moon);moon.position.set(6,0,0);mesh.userData.moon=moon;}
+ planetMeshes.push(mesh);
+});
+const nav=document.getElementById('planetNav');data.forEach((p,i)=>{const b=document.createElement('button');b.className='planetbtn';b.textContent=p.name;b.onclick=()=>selectPlanet(i);nav.appendChild(b)});
+function showSun(){document.getElementById('planetName').textContent='The Sun';document.getElementById('planetType').textContent='The star at the centre';document.getElementById('planetDesc').textContent='The Sun is the star at the centre of our Solar System. Its gravity holds the planets in orbit and its light makes life on Earth possible.';document.getElementById('planetSize').textContent='1.39 million km';document.getElementById('planetYear').textContent='—';document.querySelectorAll('.planetbtn').forEach(b=>b.classList.remove('active'));}
+function selectPlanet(i){const p=data[i],m=planetMeshes[i];document.getElementById('planetName').textContent=p.name;document.getElementById('planetType').textContent=p.type;document.getElementById('planetDesc').textContent=p.desc;document.getElementById('planetSize').textContent=p.size;document.getElementById('planetYear').textContent=p.year;document.querySelectorAll('.planetbtn').forEach((b,j)=>b.classList.toggle('active',i===j));const target=m.position.clone();controls.target.copy(target);camera.position.copy(target.clone().add(new THREE.Vector3(p.r*2.8,p.r*1.8,p.r*4.5)));controls.update();}
+const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2();renderer.domElement.addEventListener('pointerdown',e=>{mouse.x=e.clientX/innerWidth*2-1;mouse.y=-(e.clientY/innerHeight)*2+1;raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(planetMeshes);if(hits.length)selectPlanet(hits[0].object.userData.index);});
+let paused=false;document.getElementById('motionBtn').onclick=()=>{paused=!paused;document.getElementById('motionBtn').textContent=paused?'▶ Play':'Ⅱ Pause';};
+const questions=[['Which planet is known as the Red Planet?',['Venus','Mars','Jupiter','Neptune'],1],['Which is the largest planet?',['Earth','Saturn','Jupiter','Uranus'],2],['Which planet is famous for its rings?',['Mercury','Mars','Saturn','Venus'],2],['Which planet is our home?',['Earth','Venus','Neptune','Mercury'],0],['Which planet is farthest from the Sun?',['Uranus','Jupiter','Mars','Neptune'],3]];
+let qi=0,score=0,answered=false;const modal=document.getElementById('quizModal');function renderQ(){answered=false;document.getElementById('feedback').textContent='';const q=questions[qi];document.getElementById('question').textContent=(qi+1)+'. '+q[0];const a=document.getElementById('answers');a.innerHTML='';q[1].forEach((v,i)=>{const b=document.createElement('button');b.className='answer';b.textContent=v;b.onclick=()=>{if(answered)return;answered=true;if(i===q[2]){score++;document.getElementById('feedback').textContent='Correct! Great work. ✨'}else{document.getElementById('feedback').textContent='Not quite — the correct answer is '+q[1][q[2]]+'.'};};a.appendChild(b)});document.getElementById('nextQ').textContent=qi===questions.length-1?'See score':'Next question →';}
+document.getElementById('quizBtn').onclick=()=>{qi=0;score=0;renderQ();modal.classList.add('show')};document.getElementById('closeQuiz').onclick=()=>modal.classList.remove('show');document.getElementById('nextQ').onclick=()=>{if(!answered){document.getElementById('feedback').textContent='Choose an answer first.';return;}if(qi===questions.length-1){document.getElementById('question').textContent='You scored '+score+' out of '+questions.length+'!';document.getElementById('answers').innerHTML='';document.getElementById('feedback').textContent='Keep exploring the Solar System.';document.getElementById('nextQ').textContent='Play again';qi=-1;}else{qi++;renderQ();}};
+let last=0;function animate(t){requestAnimationFrame(animate);const dt=Math.min((t-last)/1000,.05);last=t;if(!paused){planetMeshes.forEach((m,i)=>{const p=data[i];m.userData.angle+=orbitSpeeds[i]*dt*12;m.position.set(Math.cos(m.userData.angle)*p.d,0,Math.sin(m.userData.angle)*p.d);m.rotation.y+=dt*.25;});sun.rotation.y+=dt*.08;}controls.update();renderer.render(scene,camera);}requestAnimationFrame(animate);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});showSun();
+</script>
+</body></html>
